@@ -1,0 +1,113 @@
+package com.example.webcamstreaming.ui.viewmodel
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.webcamstreaming.data.Webcam
+import com.example.webcamstreaming.data.WebcamRepository
+import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+data class SnackbarMessage(val message: String, val isError: Boolean = false)
+
+class WebcamViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val repository = WebcamRepository(application)
+
+    val webcams = repository.webcamsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    var snackbarMessage = mutableStateOf<SnackbarMessage?>(null)
+        private set
+
+    /** Selected webcam id for detail view. Resolve actual webcam from [webcams] by this id to avoid stale references. */
+    var selectedDetailId = mutableStateOf<String?>(null)
+        private set
+
+    fun openDetail(webcam: Webcam) {
+        selectedDetailId.value = webcam.id
+    }
+
+    fun closeDetail() {
+        selectedDetailId.value = null
+    }
+
+    /** Global audio mute for all players (detail + splitscreen). false = unmuted (volume 1f). */
+    var globalAudioMuted = mutableStateOf(false)
+        private set
+
+    fun toggleGlobalAudioMute() {
+        globalAudioMuted.value = !globalAudioMuted.value
+    }
+
+    fun addWebcam(name: String, url: String) {
+        viewModelScope.launch {
+            repository.addWebcam(name, url)
+                .onSuccess {
+                    snackbarMessage.value = SnackbarMessage("Webcam hinzugefügt")
+                }
+                .onFailure { e ->
+                    val msg = when (e.message) {
+                        "invalid_url" -> "Bitte eine gültige Stream-URL eingeben (z.B. https://example.com/stream.m3u8)"
+                        else -> e.message ?: "Failed to add webcam"
+                    }
+                    snackbarMessage.value = SnackbarMessage(msg, isError = true)
+                }
+        }
+    }
+
+    fun removeWebcam(webcam: Webcam) {
+        viewModelScope.launch {
+            repository.removeWebcam(webcam.id)
+            snackbarMessage.value = SnackbarMessage("Webcam gelöscht")
+        }
+    }
+
+    fun updateWebcam(webcam: Webcam) {
+        viewModelScope.launch {
+            repository.updateWebcam(webcam)
+                .onSuccess {
+                    snackbarMessage.value = SnackbarMessage("Webcam aktualisiert")
+                }
+                .onFailure { e ->
+                    val msg = when (e.message) {
+                        "invalid_url" -> "Bitte eine gültige Stream-URL eingeben (z.B. https://example.com/stream.m3u8)"
+                        else -> e.message ?: "Failed to update webcam"
+                    }
+                    snackbarMessage.value = SnackbarMessage(msg, isError = true)
+                }
+        }
+    }
+
+    fun clearSnackbar() {
+        snackbarMessage.value = null
+    }
+
+    fun showMessage(message: String) {
+        snackbarMessage.value = SnackbarMessage(message)
+    }
+
+    fun isValidUrl(url: String?): Boolean = repository.isValidStreamUrl(url)
+
+    fun addSampleWebcams() {
+        // Public HLS test streams (stabile .m3u8 URLs) for the empty state.
+        val samples = listOf(
+            "Big Buck Bunny" to "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+            "Tears of Steel" to "https://test-streams.mux.dev/tos_ismc/main.m3u8",
+            "PTS Shift" to "https://test-streams.mux.dev/pts_shift/master.m3u8",
+        )
+
+        viewModelScope.launch {
+            samples.forEach { (name, url) ->
+                repository.addWebcam(name, url)
+                // Ignore individual failures so the others still get added.
+            }
+            snackbarMessage.value = SnackbarMessage("Beispiel-Kameras hinzugefügt")
+        }
+    }
+}

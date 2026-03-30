@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Webcam Streaming</string>
+    <string name="tab_list">List</string>
+    <string name="tab_splitscreen">Splitscreen</string>
+    <string name="add_webcam">Add webcam</string>
+    <string name="webcam_name">Name</string>
+    <string name="stream_url">Stream URL</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="retry">Retry</string>
+    <string name="no_connection">No connection</string>
+    <string name="invalid_url">Please enter a valid URL (e.g. https://example.com/stream.m3u8)</string>
+    <string name="stream_error">Failed to load stream</string>
+</resources>
