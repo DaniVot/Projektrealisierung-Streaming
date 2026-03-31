@@ -10,22 +10,30 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.SwitchCamera
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,14 +42,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import com.example.webcamstreaming.data.Webcam
 import com.example.webcamstreaming.ui.components.VideoPlayer
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SplitscreenScreen(
     webcams: List<Webcam>,
+    slotAssignments: List<Webcam?>,
+    onSlotSelected: (slotIndex: Int, webcam: Webcam) -> Unit,
+    onClearSlot: (slotIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
     onCameraClick: (Webcam) -> Unit,
     audioMuted: Boolean = false,
@@ -49,25 +60,13 @@ fun SplitscreenScreen(
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // 4 fixed slots for the grid; allows the user to fill empty tiles via bottom sheet selection.
-    val slots = remember(webcams) {
-        val initial = MutableList<Webcam?>(4) { null }
-        webcams.take(4).forEachIndexed { index, webcam -> initial[index] = webcam }
-        initial
+    val slots = remember(slotAssignments) {
+        slotAssignments.take(4).let { list ->
+            if (list.size < 4) list + List(4 - list.size) { null } else list
+        }
     }
 
     var openSlotIndex by remember { mutableStateOf<Int?>(null) }
-
-    // When webcams shrink (e.g., deletion), clear slots pointing to removed webcams.
-    LaunchedEffect(webcams.map { it.id }) {
-        val ids = webcams.map { it.id }.toSet()
-        for (i in 0 until 4) {
-            val current = slots[i]
-            if (current != null && !ids.contains(current.id)) {
-                slots[i] = null
-            }
-        }
-    }
 
     Column(
         modifier = modifier
@@ -81,17 +80,19 @@ fun SplitscreenScreen(
         ) {
             key(slots[0]?.id ?: "empty_0") {
                 SplitscreenCell(
+                    slotIndex = 0,
                     webcam = slots[0],
-                    onEmptyClick = { openSlotIndex = 0 },
-                    onCameraClick = { onCameraClick(it) },
+                    onOpenPicker = { openSlotIndex = it },
+                    onCameraClick = onCameraClick,
                     audioMuted = audioMuted,
                 )
             }
             key(slots[1]?.id ?: "empty_1") {
                 SplitscreenCell(
+                    slotIndex = 1,
                     webcam = slots[1],
-                    onEmptyClick = { openSlotIndex = 1 },
-                    onCameraClick = { onCameraClick(it) },
+                    onOpenPicker = { openSlotIndex = it },
+                    onCameraClick = onCameraClick,
                     audioMuted = audioMuted,
                 )
             }
@@ -102,53 +103,78 @@ fun SplitscreenScreen(
         ) {
             key(slots[2]?.id ?: "empty_2") {
                 SplitscreenCell(
+                    slotIndex = 2,
                     webcam = slots[2],
-                    onEmptyClick = { openSlotIndex = 2 },
-                    onCameraClick = { onCameraClick(it) },
+                    onOpenPicker = { openSlotIndex = it },
+                    onCameraClick = onCameraClick,
                     audioMuted = audioMuted,
                 )
             }
             key(slots[3]?.id ?: "empty_3") {
                 SplitscreenCell(
+                    slotIndex = 3,
                     webcam = slots[3],
-                    onEmptyClick = { openSlotIndex = 3 },
-                    onCameraClick = { onCameraClick(it) },
+                    onOpenPicker = { openSlotIndex = it },
+                    onCameraClick = onCameraClick,
                     audioMuted = audioMuted,
                 )
             }
         }
     }
 
-    if (openSlotIndex != null) {
+    val pickerSlotIndex = openSlotIndex
+    if (pickerSlotIndex != null) {
         ModalBottomSheet(
             onDismissRequest = { openSlotIndex = null },
             sheetState = sheetState,
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
                 Text(
                     text = "Kamera auswählen",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
-
-                webcams.forEach { webcam ->
-                    ListItem(
-                        headlineContent = { Text(text = webcam.name) },
-                        supportingContent = { Text(text = webcam.streamUrl, maxLines = 1) },
-                        leadingContent = {
-                            Icon(
-                                imageVector = Icons.Default.CameraAlt,
-                                contentDescription = "Camera icon",
-                            )
+                if (slots[pickerSlotIndex] != null) {
+                    TextButton(
+                        onClick = {
+                            onClearSlot(pickerSlotIndex)
+                            openSlotIndex = null
+                            scope.launch { sheetState.hide() }
                         },
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Text("Feld leeren")
+                    }
+                }
+                if (webcams.isEmpty()) {
+                    Text(
+                        text = "Keine Kameras gespeichert",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                slots[openSlotIndex!!] = webcam
-                                openSlotIndex = null
-                                scope.launch { sheetState.hide() }
-                            }
-                    )
+                            .heightIn(max = 420.dp)
+                    ) {
+                        items(webcams, key = { it.id }) { webcam ->
+                            ListItem(
+                                headlineContent = { Text(text = webcam.name) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onSlotSelected(pickerSlotIndex, webcam)
+                                        openSlotIndex = null
+                                        scope.launch { sheetState.hide() }
+                                    }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -160,8 +186,9 @@ fun SplitscreenScreen(
 
 @Composable
 private fun RowScope.SplitscreenCell(
+    slotIndex: Int,
     webcam: Webcam?,
-    onEmptyClick: () -> Unit,
+    onOpenPicker: (Int) -> Unit,
     onCameraClick: (Webcam) -> Unit,
     audioMuted: Boolean,
 ) {
@@ -196,7 +223,7 @@ private fun RowScope.SplitscreenCell(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .border(1.dp, Color(0xFFBDBDBD), RoundedCornerShape(8.dp))
-                    .clickable(onClick = onEmptyClick),
+                    .clickable { onOpenPicker(slotIndex) },
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -204,8 +231,8 @@ private fun RowScope.SplitscreenCell(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = "No camera icon",
+                        imageVector = Icons.Filled.CameraAlt,
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp)
                     )
@@ -216,6 +243,26 @@ private fun RowScope.SplitscreenCell(
                         modifier = Modifier.padding(top = 6.dp)
                     )
                 }
+            }
+        }
+
+        Surface(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp),
+            shape = CircleShape,
+            color = Color.Black.copy(alpha = 0.45f),
+            shadowElevation = 2.dp
+        ) {
+            IconButton(
+                onClick = { onOpenPicker(slotIndex) },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.SwitchCamera,
+                    contentDescription = "Kamera wählen",
+                    tint = Color.White
+                )
             }
         }
     }

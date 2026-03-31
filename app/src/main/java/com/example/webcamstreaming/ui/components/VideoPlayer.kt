@@ -187,8 +187,7 @@ fun VideoPlayer(
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
                     this.player = player
-                    useController = true
-                    controllerShowTimeoutMs = 3000
+                    useController = false
                 }
             },
             update = { view -> view.player = player },

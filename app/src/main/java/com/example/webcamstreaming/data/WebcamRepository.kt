@@ -13,6 +13,12 @@ class WebcamRepository(context: Context) {
         list.sortedByDescending { it.addedAt }
     }
 
+    val splitscreenSlotIdsFlow: Flow<List<String?>> = dataStore.splitscreenSlotIdsFlow
+
+    suspend fun setSplitscreenSlot(index: Int, webcamId: String?) {
+        dataStore.setSplitscreenSlot(index, webcamId)
+    }
+
     suspend fun addWebcam(name: String, streamUrl: String): Result<Unit> {
         if (name.isBlank()) return Result.failure(IllegalArgumentException("Name cannot be empty"))
         if (!isValidStreamUrl(streamUrl)) return Result.failure(IllegalArgumentException("invalid_url"))

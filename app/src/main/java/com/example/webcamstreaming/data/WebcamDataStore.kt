@@ -22,7 +22,18 @@ private val json = Json {
 
 private object Keys {
     val WEBCAM_LIST = stringPreferencesKey("webcam_list")
+    val SPLIT_POS_0 = stringPreferencesKey("splitscreen_pos_0")
+    val SPLIT_POS_1 = stringPreferencesKey("splitscreen_pos_1")
+    val SPLIT_POS_2 = stringPreferencesKey("splitscreen_pos_2")
+    val SPLIT_POS_3 = stringPreferencesKey("splitscreen_pos_3")
 }
+
+private val splitscreenPosKeys = listOf(
+    Keys.SPLIT_POS_0,
+    Keys.SPLIT_POS_1,
+    Keys.SPLIT_POS_2,
+    Keys.SPLIT_POS_3,
+)
 
 class WebcamDataStore(private val context: Context) {
 
@@ -32,6 +43,25 @@ class WebcamDataStore(private val context: Context) {
             json.decodeFromString(webcamListSerializer, raw)
         } catch (_: Exception) {
             emptyList()
+        }
+    }
+
+    /** Up to four saved webcam IDs for splitscreen grid positions (null = empty slot). */
+    val splitscreenSlotIdsFlow: Flow<List<String?>> = context.dataStore.data.map { prefs ->
+        splitscreenPosKeys.map { key ->
+            prefs[key]?.takeIf { it.isNotBlank() }
+        }
+    }
+
+    suspend fun setSplitscreenSlot(index: Int, webcamId: String?) {
+        require(index in 0..3)
+        context.dataStore.edit { prefs ->
+            val key = splitscreenPosKeys[index]
+            if (webcamId.isNullOrBlank()) {
+                prefs.remove(key)
+            } else {
+                prefs[key] = webcamId
+            }
         }
     }
 
@@ -74,6 +104,11 @@ class WebcamDataStore(private val context: Context) {
         val newList = current.filter { it.id != id }
         context.dataStore.edit { prefs ->
             prefs[Keys.WEBCAM_LIST] = json.encodeToString(webcamListSerializer, newList)
+            for (key in splitscreenPosKeys) {
+                if (prefs[key] == id) {
+                    prefs.remove(key)
+                }
+            }
         }
     }
 }

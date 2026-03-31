@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
                     factory = WebcamViewModelFactory(application)
                 )
                 val webcams by viewModel.webcams.collectAsState()
+                val splitscreenSlots by viewModel.splitscreenSlots.collectAsState()
                 val selectedDetailId by viewModel.selectedDetailId
                 val globalAudioMuted by viewModel.globalAudioMuted
                 val detailWebcam = remember(selectedDetailId, webcams) {
@@ -63,13 +64,19 @@ class MainActivity : ComponentActivity() {
                                 onWebcamDelete = { webcam ->
                                     viewModel.removeWebcam(webcam)
                                 },
-                                modifier = modifier,
-                                onAddExampleCameras = { viewModel.addSampleWebcams() }
+                                modifier = modifier
                             )
                         },
                         splitscreenContent = { modifier ->
                             SplitscreenScreen(
                                 webcams = webcams,
+                                slotAssignments = splitscreenSlots,
+                                onSlotSelected = { index, webcam ->
+                                    viewModel.setSplitscreenSlot(index, webcam)
+                                },
+                                onClearSlot = { index ->
+                                    viewModel.setSplitscreenSlot(index, null)
+                                },
                                 modifier = modifier,
                                 onCameraClick = { viewModel.openDetail(it) },
                                 audioMuted = globalAudioMuted

@@ -7,6 +7,7 @@ import com.example.webcamstreaming.data.Webcam
 import com.example.webcamstreaming.data.WebcamRepository
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -20,6 +21,18 @@ class WebcamViewModel(application: Application) : AndroidViewModel(application) 
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
+    )
+
+    /** Resolved webcams for splitscreen grid (4 slots), from persisted IDs + current list. */
+    val splitscreenSlots = combine(
+        repository.webcamsFlow,
+        repository.splitscreenSlotIdsFlow
+    ) { cams, ids ->
+        ids.map { id -> id?.let { wid -> cams.find { it.id == wid } } }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = listOf(null, null, null, null)
     )
 
     var snackbarMessage = mutableStateOf<SnackbarMessage?>(null)
@@ -43,6 +56,13 @@ class WebcamViewModel(application: Application) : AndroidViewModel(application) 
 
     fun toggleGlobalAudioMute() {
         globalAudioMuted.value = !globalAudioMuted.value
+    }
+
+    fun setSplitscreenSlot(index: Int, webcam: Webcam?) {
+        require(index in 0..3)
+        viewModelScope.launch {
+            repository.setSplitscreenSlot(index, webcam?.id)
+        }
     }
 
     fun addWebcam(name: String, url: String) {
@@ -93,21 +113,4 @@ class WebcamViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun isValidUrl(url: String?): Boolean = repository.isValidStreamUrl(url)
-
-    fun addSampleWebcams() {
-        // Public HLS test streams (stabile .m3u8 URLs) for the empty state.
-        val samples = listOf(
-            "Big Buck Bunny" to "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
-            "Tears of Steel" to "https://test-streams.mux.dev/tos_ismc/main.m3u8",
-            "PTS Shift" to "https://test-streams.mux.dev/pts_shift/master.m3u8",
-        )
-
-        viewModelScope.launch {
-            samples.forEach { (name, url) ->
-                repository.addWebcam(name, url)
-                // Ignore individual failures so the others still get added.
-            }
-            snackbarMessage.value = SnackbarMessage("Beispiel-Kameras hinzugefügt")
-        }
-    }
 }

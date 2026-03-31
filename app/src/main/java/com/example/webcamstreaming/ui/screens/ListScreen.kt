@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +44,6 @@ fun ListScreen(
     onWebcamClick: (Webcam) -> Unit,
     onWebcamLongClick: (Webcam) -> Unit = {},
     onWebcamDelete: (Webcam) -> Unit = {},
-    onAddExampleCameras: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (webcams.isEmpty()) {
@@ -74,12 +72,6 @@ fun ListScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp)
                 )
-                Button(
-                    onClick = onAddExampleCameras,
-                    modifier = Modifier.padding(top = 16.dp)
-                ) {
-                    Text("Beispiel-Kameras hinzufügen")
-                }
             }
         }
         return
