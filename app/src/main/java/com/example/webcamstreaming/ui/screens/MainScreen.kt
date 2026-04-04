@@ -20,13 +20,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,11 +56,18 @@ fun MainScreen(
 
     LaunchedEffect(snackbarMessage) {
         snackbarMessage?.let { msg ->
-            snackbarHostState.showSnackbar(
+            val result = snackbarHostState.showSnackbar(
                 message = msg.message,
-                duration = SnackbarDuration.Short,
+                actionLabel = msg.actionLabel,
+                duration = if (msg.offersDeleteUndo) SnackbarDuration.Long else SnackbarDuration.Short,
                 withDismissAction = true
             )
+            if (msg.offersDeleteUndo) {
+                when (result) {
+                    SnackbarResult.ActionPerformed -> viewModel.confirmDeleteUndo()
+                    SnackbarResult.Dismissed -> viewModel.discardDeleteUndo()
+                }
+            }
             viewModel.clearSnackbar()
         }
     }

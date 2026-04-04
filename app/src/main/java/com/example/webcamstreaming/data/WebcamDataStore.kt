@@ -111,4 +111,14 @@ class WebcamDataStore(private val context: Context) {
             }
         }
     }
+
+    /** Re-insert a webcam after undo delete (same id as before). Splitscreen slots are not restored. */
+    suspend fun restoreWebcam(webcam: Webcam) {
+        val current = getCurrentWebcams()
+        if (current.any { it.id == webcam.id }) return
+        val newList = current + webcam
+        context.dataStore.edit { prefs ->
+            prefs[Keys.WEBCAM_LIST] = json.encodeToString(webcamListSerializer, newList)
+        }
+    }
 }

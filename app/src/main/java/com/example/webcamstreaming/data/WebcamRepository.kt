@@ -35,6 +35,10 @@ class WebcamRepository(context: Context) {
         dataStore.removeWebcam(id)
     }
 
+    suspend fun restoreWebcam(webcam: Webcam) {
+        dataStore.restoreWebcam(webcam)
+    }
+
     suspend fun updateWebcam(webcam: Webcam): Result<Unit> {
         if (webcam.name.isBlank()) return Result.failure(IllegalArgumentException("Name cannot be empty"))
         if (!isValidStreamUrl(webcam.streamUrl)) return Result.failure(IllegalArgumentException("invalid_url"))

@@ -11,7 +11,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class SnackbarMessage(val message: String, val isError: Boolean = false)
+data class SnackbarMessage(
+    val message: String,
+    val isError: Boolean = false,
+    /** If set, snackbar shows this action (e.g. undo after delete). */
+    val actionLabel: String? = null,
+    val offersDeleteUndo: Boolean = false,
+)
 
 class WebcamViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -37,6 +43,9 @@ class WebcamViewModel(application: Application) : AndroidViewModel(application) 
 
     var snackbarMessage = mutableStateOf<SnackbarMessage?>(null)
         private set
+
+    /** Snapshot for „Rückgängig“ after delete; cleared when snackbar ends or undo runs. */
+    private var pendingUndoDelete: Webcam? = null
 
     /** Selected webcam id for detail view. Resolve actual webcam from [webcams] by this id to avoid stale references. */
     var selectedDetailId = mutableStateOf<String?>(null)
@@ -84,8 +93,26 @@ class WebcamViewModel(application: Application) : AndroidViewModel(application) 
     fun removeWebcam(webcam: Webcam) {
         viewModelScope.launch {
             repository.removeWebcam(webcam.id)
-            snackbarMessage.value = SnackbarMessage("Webcam gelöscht")
+            pendingUndoDelete = webcam
+            snackbarMessage.value = SnackbarMessage(
+                message = "Webcam gelöscht",
+                actionLabel = "Rückgängig",
+                offersDeleteUndo = true,
+            )
         }
+    }
+
+    fun confirmDeleteUndo() {
+        val w = pendingUndoDelete ?: return
+        pendingUndoDelete = null
+        viewModelScope.launch {
+            repository.restoreWebcam(w)
+            snackbarMessage.value = SnackbarMessage("Webcam wiederhergestellt")
+        }
+    }
+
+    fun discardDeleteUndo() {
+        pendingUndoDelete = null
     }
 
     fun updateWebcam(webcam: Webcam) {
