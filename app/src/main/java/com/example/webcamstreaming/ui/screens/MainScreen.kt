@@ -1,7 +1,12 @@
 package com.example.webcamstreaming.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
@@ -17,6 +22,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -27,12 +33,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.example.webcamstreaming.R
+import com.example.webcamstreaming.data.ThemePreference
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.webcamstreaming.ui.viewmodel.WebcamViewModel
 import com.example.webcamstreaming.ui.viewmodel.WebcamViewModelFactory
@@ -49,6 +61,7 @@ fun MainScreen(
     onAddClick: () -> Unit
 ) {
     val snackbarMessage by viewModel.snackbarMessage
+    val themePreference by viewModel.themePreference.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var overflowExpanded by remember { mutableStateOf(false) }
@@ -75,24 +88,53 @@ fun MainScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Webcam Streaming (${cameraCount})") },
+                title = { Text(stringResource(R.string.main_toolbar_title, cameraCount)) },
                 actions = {
-                    IconButton(
-                        onClick = { overflowExpanded = true },
-                    ) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "Menü")
-                    }
-                    DropdownMenu(
-                        expanded = overflowExpanded,
-                        onDismissRequest = { overflowExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Über") },
-                            onClick = {
-                                overflowExpanded = false
-                                showAboutDialog = true
-                            }
-                        )
+                    Box {
+                        IconButton(
+                            onClick = { overflowExpanded = true },
+                        ) {
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = stringResource(R.string.menu_overflow)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = overflowExpanded,
+                            onDismissRequest = { overflowExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(stringResource(R.string.menu_dark_mode))
+                                        Box(
+                                            modifier = Modifier.height(32.dp),
+                                            contentAlignment = Alignment.CenterEnd
+                                        ) {
+                                            Switch(
+                                                checked = themePreference == ThemePreference.DARK,
+                                                onCheckedChange = { enabled ->
+                                                    viewModel.setDarkThemeForced(enabled)
+                                                },
+                                                modifier = Modifier.scale(0.68f)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {}
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Über") },
+                                onClick = {
+                                    overflowExpanded = false
+                                    showAboutDialog = true
+                                }
+                            )
+                        }
                     }
                 }
             )
@@ -136,7 +178,7 @@ fun MainScreen(
             title = { Text("Über") },
             text = {
                 Column {
-                    Text("Webcam Streaming", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Version: 1.0",
                         modifier = Modifier.padding(top = 8.dp),

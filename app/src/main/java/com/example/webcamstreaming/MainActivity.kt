@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -11,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.webcamstreaming.data.ThemePreference
 import com.example.webcamstreaming.data.Webcam
 import com.example.webcamstreaming.ui.screens.AddWebcamDialog
 import com.example.webcamstreaming.ui.screens.DetailScreen
@@ -26,10 +28,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            WebcamStreamingTheme {
-                val viewModel: WebcamViewModel = viewModel(
-                    factory = WebcamViewModelFactory(application)
-                )
+            val viewModel: WebcamViewModel = viewModel(
+                factory = WebcamViewModelFactory(application)
+            )
+            val systemDark = isSystemInDarkTheme()
+            val themePreference by viewModel.themePreference.collectAsState()
+            val useDarkTheme =
+                themePreference == ThemePreference.DARK ||
+                    (themePreference == ThemePreference.SYSTEM && systemDark)
+
+            WebcamStreamingTheme(darkTheme = useDarkTheme) {
                 val webcams by viewModel.webcams.collectAsState()
                 val splitscreenSlots by viewModel.splitscreenSlots.collectAsState()
                 val selectedDetailId by viewModel.selectedDetailId

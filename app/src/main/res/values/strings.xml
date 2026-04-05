@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Webcam Streaming</string>
+    <string name="app_name">Iris</string>
+    <string name="main_toolbar_title">Iris (%1$d)</string>
     <string name="tab_list">List</string>
     <string name="tab_splitscreen">Splitscreen</string>
     <string name="add_webcam">Add webcam</string>
@@ -12,4 +13,6 @@
     <string name="no_connection">No connection</string>
     <string name="invalid_url">Please enter a valid URL (e.g. https://example.com/stream.m3u8)</string>
     <string name="stream_error">Failed to load stream</string>
+    <string name="menu_dark_mode">Dark Mode</string>
+    <string name="menu_overflow">Menu</string>
 </resources>

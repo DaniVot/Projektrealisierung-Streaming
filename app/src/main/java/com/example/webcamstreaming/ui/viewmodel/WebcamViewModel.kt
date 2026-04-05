@@ -3,6 +3,7 @@ package com.example.webcamstreaming.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.webcamstreaming.data.ThemePreference
 import com.example.webcamstreaming.data.Webcam
 import com.example.webcamstreaming.data.WebcamRepository
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,12 @@ class WebcamViewModel(application: Application) : AndroidViewModel(application) 
         initialValue = listOf(null, null, null, null)
     )
 
+    val themePreference = repository.themePreferenceFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ThemePreference.SYSTEM
+    )
+
     var snackbarMessage = mutableStateOf<SnackbarMessage?>(null)
         private set
 
@@ -71,6 +78,15 @@ class WebcamViewModel(application: Application) : AndroidViewModel(application) 
         require(index in 0..3)
         viewModelScope.launch {
             repository.setSplitscreenSlot(index, webcam?.id)
+        }
+    }
+
+    /** Switch ON = force dark theme; OFF = follow system. */
+    fun setDarkThemeForced(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setThemePreference(
+                if (enabled) ThemePreference.DARK else ThemePreference.SYSTEM
+            )
         }
     }
 

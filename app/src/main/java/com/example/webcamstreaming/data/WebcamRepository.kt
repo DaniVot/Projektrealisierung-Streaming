@@ -15,6 +15,12 @@ class WebcamRepository(context: Context) {
 
     val splitscreenSlotIdsFlow: Flow<List<String?>> = dataStore.splitscreenSlotIdsFlow
 
+    val themePreferenceFlow: Flow<ThemePreference> = dataStore.themePreferenceFlow
+
+    suspend fun setThemePreference(preference: ThemePreference) {
+        dataStore.setThemePreference(preference)
+    }
+
     suspend fun setSplitscreenSlot(index: Int, webcamId: String?) {
         dataStore.setSplitscreenSlot(index, webcamId)
     }

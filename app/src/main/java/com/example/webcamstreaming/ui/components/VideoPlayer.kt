@@ -35,7 +35,6 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
-import com.example.webcamstreaming.ui.theme.SurfaceVariant
 import androidx.compose.material3.OutlinedButton
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -214,7 +213,7 @@ fun VideoPlayer(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(SurfaceVariant.copy(alpha = 0.7f)),
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)

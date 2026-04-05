@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.ListSerializer
@@ -26,6 +27,7 @@ private object Keys {
     val SPLIT_POS_1 = stringPreferencesKey("splitscreen_pos_1")
     val SPLIT_POS_2 = stringPreferencesKey("splitscreen_pos_2")
     val SPLIT_POS_3 = stringPreferencesKey("splitscreen_pos_3")
+    val THEME_PREFERENCE = stringPreferencesKey("theme_preference")
 }
 
 private val splitscreenPosKeys = listOf(
@@ -50,6 +52,17 @@ class WebcamDataStore(private val context: Context) {
     val splitscreenSlotIdsFlow: Flow<List<String?>> = context.dataStore.data.map { prefs ->
         splitscreenPosKeys.map { key ->
             prefs[key]?.takeIf { it.isNotBlank() }
+        }
+    }
+
+    val themePreferenceFlow: Flow<ThemePreference> =
+        context.dataStore.data
+            .map { prefs -> ThemePreference.fromStored(prefs[Keys.THEME_PREFERENCE]) }
+            .distinctUntilChanged()
+
+    suspend fun setThemePreference(preference: ThemePreference) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.THEME_PREFERENCE] = preference.toStored()
         }
     }
 

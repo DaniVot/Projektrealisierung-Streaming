@@ -16,38 +16,68 @@ private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
     primaryContainer = Primary.copy(alpha = 0.2f),
+    background = Surface,
+    onBackground = OnSurface,
     surface = Surface,
     onSurface = OnSurface,
     surfaceVariant = SurfaceVariant,
     onSurfaceVariant = OnSurfaceVariant,
     error = Error,
-    outline = Outline
+    outline = Outline,
+    outlineVariant = Color(0xFFCAC4D0)
 )
 
-private val DarkColorScheme = darkColorScheme(
+private val IrisDarkColorScheme = darkColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
-    primaryContainer = PrimaryDark,
-    surface = Color(0xFF1C1B1F),
-    onSurface = Color(0xFFE6E1E5),
-    surfaceVariant = Color(0xFF49454F),
-    onSurfaceVariant = Color(0xFFCAC4D0),
-    error = Color(0xFFCF6679),
-    outline = Color(0xFF938F99)
+    primaryContainer = PrimaryDark.copy(alpha = 0.45f),
+    onPrimaryContainer = Color(0xFFB2EBF2),
+    secondary = Primary.copy(alpha = 0.85f),
+    onSecondary = OnPrimary,
+    secondaryContainer = IrisDarkSurfaceVariant,
+    onSecondaryContainer = IrisDarkOnSurface,
+    tertiary = PrimaryDark,
+    onTertiary = OnPrimary,
+    background = IrisDarkBackground,
+    onBackground = IrisDarkOnBackground,
+    surface = IrisDarkSurface,
+    onSurface = IrisDarkOnSurface,
+    surfaceVariant = IrisDarkSurfaceVariant,
+    onSurfaceVariant = IrisDarkOnSurfaceVariant,
+    surfaceTint = Primary.copy(alpha = 0.12f),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    outline = IrisDarkOutline,
+    outlineVariant = IrisDarkOutlineVariant,
+    scrim = Color(0xFF000000)
 )
 
+/** Material 3 theme for the Iris app. */
 @Composable
 fun WebcamStreamingTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = if (darkTheme) IrisDarkColorScheme else LightColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            val controller = WindowCompat.getInsetsController(window, view)
+            if (darkTheme) {
+                window.statusBarColor = colorScheme.surface.toArgb()
+                window.navigationBarColor = colorScheme.surface.toArgb()
+                controller.isAppearanceLightStatusBars = false
+                controller.isAppearanceLightNavigationBars = false
+            } else {
+                // Light mode: cyan status bar (Iris accent), white nav bar — wie zuvor
+                window.statusBarColor = colorScheme.primary.toArgb()
+                window.navigationBarColor = colorScheme.surface.toArgb()
+                controller.isAppearanceLightStatusBars = false
+                controller.isAppearanceLightNavigationBars = true
+            }
         }
     }
     MaterialTheme(

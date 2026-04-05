@@ -203,7 +203,7 @@ private fun RowScope.SplitscreenCell(
                     url = webcam.streamUrl,
                     modifier = Modifier
                         .fillMaxSize()
-                        .border(1.dp, Color(0xFFBDBDBD), RoundedCornerShape(8.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                         .clickable { onCameraClick(webcam) },
                     audioMuted = audioMuted,
                 )
@@ -222,7 +222,7 @@ private fun RowScope.SplitscreenCell(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .border(1.dp, Color(0xFFBDBDBD), RoundedCornerShape(8.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                     .clickable { onOpenPicker(slotIndex) },
                 contentAlignment = Alignment.Center
             ) {

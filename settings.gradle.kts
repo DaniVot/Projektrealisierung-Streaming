@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "WebcamStreaming"
+rootProject.name = "Iris"
 include(":app")

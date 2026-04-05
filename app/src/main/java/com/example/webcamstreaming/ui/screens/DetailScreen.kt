@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +49,7 @@ import com.example.webcamstreaming.data.Webcam
 import com.example.webcamstreaming.ui.components.StreamStatus
 import com.example.webcamstreaming.ui.components.VideoPlayer
 import java.util.Date
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +66,28 @@ fun DetailScreen(
     var streamStatus by remember { mutableStateOf(StreamStatus.BUFFERING) }
     var reloadToken by remember { mutableStateOf(0) }
     var isFullscreen by remember { mutableStateOf(false) }
+    var fullscreenControlsVisible by remember { mutableStateOf(false) }
+    val fullscreenTapInteraction = remember { MutableInteractionSource() }
+
+    LaunchedEffect(isFullscreen) {
+        if (isFullscreen) {
+            fullscreenControlsVisible = false
+        }
+    }
+
+    LaunchedEffect(isFullscreen, fullscreenControlsVisible, streamStatus) {
+        if (!isFullscreen || !fullscreenControlsVisible || streamStatus == StreamStatus.ERROR) {
+            return@LaunchedEffect
+        }
+        delay(5_000L)
+        fullscreenControlsVisible = false
+    }
+
+    LaunchedEffect(isFullscreen, streamStatus) {
+        if (isFullscreen && streamStatus == StreamStatus.ERROR) {
+            fullscreenControlsVisible = true
+        }
+    }
 
     DisposableEffect(isFullscreen) {
         val activity = context as? Activity
@@ -75,8 +100,10 @@ fun DetailScreen(
                 controller.systemBarsBehavior =
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             } else {
+                // Align with MainActivity.enableEdgeToEdge() — never use decorFits true here,
+                // or returning to the list breaks TopAppBar / status-bar inset layout.
+                WindowCompat.setDecorFitsSystemWindows(window, false)
                 controller.show(WindowInsetsCompat.Type.systemBars())
-                WindowCompat.setDecorFitsSystemWindows(window, true)
             }
         }
         onDispose {
@@ -85,7 +112,7 @@ fun DetailScreen(
                 val window = act.window
                 val controller = WindowCompat.getInsetsController(window, window.decorView)
                 controller.show(WindowInsetsCompat.Type.systemBars())
-                WindowCompat.setDecorFitsSystemWindows(window, true)
+                WindowCompat.setDecorFitsSystemWindows(window, false)
             }
         }
     }
@@ -126,72 +153,88 @@ fun DetailScreen(
                 onUrlCopied = { onUserMessage("URL kopiert") }
             )
 
-            if (isFullscreen) {
-                Surface(
+            if (isFullscreen && streamStatus != StreamStatus.ERROR) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = fullscreenTapInteraction,
+                            indication = null
+                        ) {
+                            fullscreenControlsVisible = !fullscreenControlsVisible
+                        }
+                )
+            }
+
+            val showOverlayControls = !isFullscreen || fullscreenControlsVisible
+            if (showOverlayControls) {
+                if (isFullscreen) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .statusBarsPadding()
+                            .padding(12.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                        shadowElevation = 4.dp
+                    ) {
+                        IconButton(
+                            onClick = { isFullscreen = false },
+                            modifier = Modifier.padding(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.ArrowBack,
+                                contentDescription = "Vollbild verlassen"
+                            )
+                        }
+                    }
+                }
+
+                Row(
                     modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .statusBarsPadding()
-                        .padding(12.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                    shadowElevation = 4.dp
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .then(
+                            if (isFullscreen) {
+                                Modifier
+                                    .navigationBarsPadding()
+                                    .padding(12.dp)
+                            } else {
+                                Modifier.padding(12.dp)
+                            }
+                        )
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     IconButton(
-                        onClick = { isFullscreen = false },
+                        onClick = { reloadToken += 1 },
+                        modifier = Modifier.padding(4.dp)
+                    ) {
+                        Icon(Icons.Filled.Refresh, contentDescription = "Stream neu laden")
+                    }
+                    IconButton(
+                        onClick = onToggleAudioMute,
                         modifier = Modifier.padding(4.dp)
                     ) {
                         Icon(
-                            Icons.Filled.ArrowBack,
-                            contentDescription = "Vollbild verlassen"
+                            imageVector = if (isAudioMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                            contentDescription = if (isAudioMuted) "Ton einschalten" else "Stummschalten",
+                            tint = if (isAudioMuted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .then(
-                        if (isFullscreen) {
-                            Modifier
-                                .navigationBarsPadding()
-                                .padding(12.dp)
-                        } else {
-                            Modifier.padding(12.dp)
-                        }
-                    )
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                IconButton(
-                    onClick = { reloadToken += 1 },
-                    modifier = Modifier.padding(4.dp)
-                ) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "Stream neu laden")
-                }
-                IconButton(
-                    onClick = onToggleAudioMute,
-                    modifier = Modifier.padding(4.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isAudioMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
-                        contentDescription = if (isAudioMuted) "Ton einschalten" else "Stummschalten",
-                        tint = if (isAudioMuted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                IconButton(
-                    onClick = { isFullscreen = !isFullscreen },
-                    modifier = Modifier.padding(4.dp)
-                ) {
-                    val icon = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen
-                    Icon(
-                        icon,
-                        contentDescription = if (isFullscreen) "Vollbild beenden" else "Vollbild"
-                    )
+                    IconButton(
+                        onClick = { isFullscreen = !isFullscreen },
+                        modifier = Modifier.padding(4.dp)
+                    ) {
+                        val icon = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen
+                        Icon(
+                            icon,
+                            contentDescription = if (isFullscreen) "Vollbild beenden" else "Vollbild"
+                        )
+                    }
                 }
             }
         }
