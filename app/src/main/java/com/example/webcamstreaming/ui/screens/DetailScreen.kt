@@ -125,7 +125,11 @@ fun DetailScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         if (!isFullscreen) {
             TopAppBar(
                 title = { Text(webcam.name) },
@@ -168,6 +172,7 @@ fun DetailScreen(
 
             val showOverlayControls = !isFullscreen || fullscreenControlsVisible
             if (showOverlayControls) {
+                val overlayIconTint = MaterialTheme.colorScheme.onSurface
                 if (isFullscreen) {
                     Surface(
                         modifier = Modifier
@@ -184,7 +189,8 @@ fun DetailScreen(
                         ) {
                             Icon(
                                 Icons.Filled.ArrowBack,
-                                contentDescription = "Vollbild verlassen"
+                                contentDescription = "Vollbild verlassen",
+                                tint = overlayIconTint
                             )
                         }
                     }
@@ -213,7 +219,11 @@ fun DetailScreen(
                         onClick = { reloadToken += 1 },
                         modifier = Modifier.padding(4.dp)
                     ) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Stream neu laden")
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = "Stream neu laden",
+                            tint = overlayIconTint
+                        )
                     }
                     IconButton(
                         onClick = onToggleAudioMute,
@@ -222,7 +232,11 @@ fun DetailScreen(
                         Icon(
                             imageVector = if (isAudioMuted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
                             contentDescription = if (isAudioMuted) "Ton einschalten" else "Stummschalten",
-                            tint = if (isAudioMuted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (isAudioMuted) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                overlayIconTint
+                            }
                         )
                     }
                     IconButton(
@@ -232,7 +246,8 @@ fun DetailScreen(
                         val icon = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen
                         Icon(
                             icon,
-                            contentDescription = if (isFullscreen) "Vollbild beenden" else "Vollbild"
+                            contentDescription = if (isFullscreen) "Vollbild beenden" else "Vollbild",
+                            tint = overlayIconTint
                         )
                     }
                 }
@@ -240,11 +255,18 @@ fun DetailScreen(
         }
 
         if (!isFullscreen) {
-            Column(modifier = Modifier.padding(12.dp)) {
+            // Nur Farben setzen — keine anderen typography-Styles, damit Größe/Zeilenumbruch wie zuvor bleiben.
+            // navigationBarsPadding: mit enableEdgeToEdge() sonst letzte Zeile unter der Navigationsleiste abgeschnitten.
+            Column(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .navigationBarsPadding()
+            ) {
                 Text(
                     text = webcam.streamUrl,
                     maxLines = if (urlExpanded) Int.MAX_VALUE else 1,
                     overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { urlExpanded = !urlExpanded }
@@ -252,6 +274,7 @@ fun DetailScreen(
 
                 Text(
                     text = "Hinzugefügt: " + addedAtText(webcam.addedAt),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 6.dp)
                 )
 
@@ -262,6 +285,10 @@ fun DetailScreen(
                 }
                 Text(
                     text = "Status: $statusLabel",
+                    color = when (streamStatus) {
+                        StreamStatus.ERROR -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
